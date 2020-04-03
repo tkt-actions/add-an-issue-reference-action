@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {getIssueNumber} from './utils'
+import {PullRequestRepository} from './repository/PullRequestRepository'
 
 async function run(): Promise<void> {
   try {
@@ -18,27 +19,15 @@ async function run(): Promise<void> {
     }
 
     const token = core.getInput('repo-token', {required: true})
-    const githubAPI = new github.GitHub(token)
+    const client = new github.GitHub(token)
 
     const {repo, issue} = github.context
 
-    const issueData = await githubAPI.issues.get({
-      owner: repo.owner,
-      repo: repo.repo,
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      issue_number: issueNumber
-    })
-
-    const issueTitle = issueData.data.title
-    const referenceComment = `Related Issue: #${issueNumber} ${issueTitle}`
-
-    const response = await githubAPI.issues.createComment({
-      owner: repo.owner,
-      repo: repo.repo,
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      issue_number: issue.number,
-      body: referenceComment
-    })
+    const prRepository = new PullRequestRepository(client)
+    const pr = await prRepository.get(issueNumber, repo.owner, repo.repo)
+    const response = await prRepository.update(
+      pr.addIntoTopOfBody(`Resolve #${issueNumber} ${pr.title}`)
+    )
 
     core.info(
       `Added issue #${issueNumber} reference to pull request #${issue.number}.\n${response.data.html_url}`
