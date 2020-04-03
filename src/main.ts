@@ -26,7 +26,7 @@ async function run(): Promise<void> {
     const prRepository = new PullRequestRepository(client)
     const pr = await prRepository.get(issueNumber, repo.owner, repo.repo)
     const response = await prRepository.update(
-      pr.addIntoTopOfBody(`Resolve #${issueNumber} ${pr.title}`)
+      pr.addRelatedIssueNumberToBody(issueNumber)
     )
 
     core.info(
